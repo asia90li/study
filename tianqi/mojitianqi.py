@@ -3,6 +3,7 @@ import datetime
 import schedule
 import time
 import pymysql
+#访问网页
 def url_open(url):
     req = urllib.request.Request(url)
     req.add_header('User-Agent','Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36')
@@ -11,7 +12,7 @@ def url_open(url):
     #print(html)
     return html
 
-
+#爬去网页，查询数据信息
 def get_page(url,mesage):
     html = url_open(url).decode('utf-8')
     # print(html)
@@ -49,7 +50,7 @@ def find_date(date,mesage):
             print(date[aa-4:aa + 10])
             mesage.append(date[aa-3:aa + 1])
             mesage.append(date[aa + 12:aa + 16])
-
+#保存数据到mysql
 def save(mesage):
     db = pymysql.connect("localhost", "root", "123456", "tianqi",use_unicode=True, charset="utf8")
     cursor = db.cursor()
@@ -75,22 +76,24 @@ def save(mesage):
     print(mesage)
 
 
-
+#主入口
 def download_mm():
     mesage = []
     url ="http://tianqi.moji.com/"
     date = get_page(url,mesage)
     # print("**************")
     # print(date)
+    #调用寻找数据
     find_date(date,mesage)
     # print(mesage)
 
     save(mesage)
+#定时JOB
 def job():
     # print("I'm working...")
     download_mm()
 
-
+#定时每天9点执行任务
 # schedule.every(1).minutes.do(job)
 # schedule.every().hour.do(job)
 schedule.every().day.at("9:00").do(job)
