@@ -3,6 +3,10 @@ import datetime
 import schedule
 import time
 import pymysql
+import cx_Oracle
+
+tns=cx_Oracle.makedsn('192.168.199.117',1522,'orcl')
+db2=cx_Oracle.connect('scott','1qaz2wsx',tns)
 #访问网页
 def url_open(url):
     req = urllib.request.Request(url)
@@ -47,9 +51,13 @@ def find_date(date,mesage):
         #获取风向、级数
         else :
             aa = date.find(i)
-            print(date[aa-4:aa + 10])
-            mesage.append(date[aa-3:aa + 1])
-            mesage.append(date[aa + 12:aa + 16])
+            print(date[aa-2:aa + 1])
+            temp = (date[aa-2:aa + 1])
+            atmp = temp.split("&")
+            mesage.append(atmp[0])
+            tempb = (date[aa + 12:aa + 16])
+            btmp = tempb.split("<")
+            mesage.append(btmp[0])
 #保存数据到mysql
 def save(mesage):
     db = pymysql.connect("localhost", "root", "123456", "tianqi",use_unicode=True, charset="utf8")
@@ -76,6 +84,30 @@ def save(mesage):
     print(mesage)
 
 
+#保存数据到oracle
+def save_oracle(mesage,db2):
+    cursor = db2.cursor()
+    sql = "INSERT INTO dbtianqi (join_date, tianqi_date, tianqi, wendu, FENGXIANG, fengji)  VALUES ('%s', '%s', '%s', '%s', '%s', '%s' )" % (mesage[0], mesage[1], mesage[2], mesage[3], mesage[4], mesage[5])
+    print(sql)
+    print(str(mesage[0]), str(mesage[1]), mesage[2], mesage[3], mesage[4],mesage[5])
+    try:
+        # 执行sql语句
+        cursor.execute(sql)
+        # 执行sql语句
+        cursor.close
+        db2.commit()
+        print("OK")
+    except  :
+        # 发生错误时回滚
+        db2.rollback()
+        print("NG")
+        raise
+    # 关闭数据库连接
+    db2.close()
+
+    print(mesage)
+
+
 #主入口
 def download_mm():
     mesage = []
@@ -86,9 +118,11 @@ def download_mm():
     #调用寻找数据
     find_date(date,mesage)
     # print(mesage)
-
+    # 保存数据到mysql
     save(mesage)
-#定时JOB
+    # 保存数据到ORACLE
+    save_oracle(mesage, db2)
+# 定时JOB
 def job():
     # print("I'm working...")
     download_mm()
@@ -100,9 +134,9 @@ schedule.every().day.at("9:00").do(job)
 # schedule.every().monday.do(job)
 # schedule.every().wednesday.at("13:15").do(job)
 
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+# while True:
+#     schedule.run_pending()
+#     time.sleep(1)
 
 
 if __name__ == '__main__':
